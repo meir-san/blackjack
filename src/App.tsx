@@ -29,6 +29,7 @@ function App() {
     balance,
     selectedBetAmount,
     pool,
+    sessionVolume,
     activityFeed,
     priceHistory,
     
@@ -289,8 +290,8 @@ function App() {
               <span className="text-white font-bold">${totalMyBets}</span>
             </div>
             <div>
-              <span className="text-slate-300">Total Pool </span>
-              <span className="text-yellow-400 font-bold">${totalPool.toLocaleString()}</span>
+              <span className="text-slate-300">Volume </span>
+              <span className="text-yellow-400 font-bold">${sessionVolume.toLocaleString()}</span>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />

@@ -71,6 +71,7 @@ export interface GameState {
   balance: number;
   myPositions: Positions;
   selectedBetAmount: number;
+  sessionVolume: number;
   
   // Market state
   pool: Pool;

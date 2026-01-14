@@ -62,6 +62,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   balance: INITIAL_BALANCE,
   myPositions: { player: [], dealer: [], push: [] },
   selectedBetAmount: 10,
+  sessionVolume: 0,
   pool: { player: 0, dealer: 0, push: 0 },
   crowdBets: { player: 0, dealer: 0, push: 0 },
   activityFeed: [],
@@ -309,6 +310,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     
     set({
       balance: state.balance - amount,
+      sessionVolume: state.sessionVolume + amount,
       myPositions: {
         ...state.myPositions,
         [type]: [...state.myPositions[type], newPosition],
