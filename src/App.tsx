@@ -14,6 +14,7 @@ import rainLogo from './assets/logodark.svg';
 
 function App() {
   const [showGeneralRules, setShowGeneralRules] = useState(false);
+  const [showFeesModal, setShowFeesModal] = useState(false);
   
   const {
     // State
@@ -293,6 +294,17 @@ function App() {
               <span className="text-slate-300">Volume </span>
               <span className="text-yellow-400 font-bold">${sessionVolume.toLocaleString()}</span>
             </div>
+            <div className="flex items-center gap-1">
+              <span className="text-slate-300">Fees </span>
+              <span className="text-rose-400 font-bold">${(sessionVolume * 0.035).toFixed(2)}</span>
+              <button
+                onClick={() => setShowFeesModal(true)}
+                className="w-4 h-4 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white flex items-center justify-center text-[10px] font-bold transition-colors"
+                aria-label="Show fee breakdown"
+              >
+                ?
+              </button>
+            </div>
             <div className="ml-auto flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-emerald-400 font-medium">LIVE</span>
@@ -528,6 +540,68 @@ function App() {
           </div>
         </div>
       </RulesOverlay>
+
+      {/* Fees Breakdown Modal */}
+      {showFeesModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+          onClick={() => setShowFeesModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">Fee Breakdown</h2>
+              <button
+                onClick={() => setShowFeesModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-lg transition-colors"
+                aria-label="Close modal"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                <div>
+                  <div className="text-sm font-medium text-slate-200">Buyback & Burn</div>
+                  <div className="text-xs text-slate-400">1.5% of volume</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-rose-400">${(sessionVolume * 0.015).toFixed(2)}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                <div>
+                  <div className="text-sm font-medium text-slate-200">Liquidity</div>
+                  <div className="text-xs text-slate-400">1.5% of volume</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-rose-400">${(sessionVolume * 0.015).toFixed(2)}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-slate-800">
+                <div>
+                  <div className="text-sm font-medium text-slate-200">Traffic</div>
+                  <div className="text-xs text-slate-400">0.5% of volume</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-rose-400">${(sessionVolume * 0.005).toFixed(2)}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2 mt-2 border-t-2 border-slate-700">
+                <div>
+                  <div className="text-sm font-bold text-white">Total Fees</div>
+                  <div className="text-xs text-slate-400">3.5% of volume</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-base font-bold text-rose-400">${(sessionVolume * 0.035).toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Developer Credit */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 px-4 py-2 z-10">
