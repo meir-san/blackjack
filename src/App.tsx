@@ -449,7 +449,7 @@ function App() {
                 currentValue={getPositionValue('player')}
                 pnl={getUnrealizedPnL('player')}
                 onPlaceBet={() => placeBet('player')}
-                onSellPosition={() => sellPosition('player')}
+                onSellPosition={(percentage) => sellPosition('player', percentage)}
               />
               <BettingRow
                 type="dealer"
@@ -466,7 +466,7 @@ function App() {
                 currentValue={getPositionValue('dealer')}
                 pnl={getUnrealizedPnL('dealer')}
                 onPlaceBet={() => placeBet('dealer')}
-                onSellPosition={() => sellPosition('dealer')}
+                onSellPosition={(percentage) => sellPosition('dealer', percentage)}
               />
               <BettingRow
                 type="push"
@@ -483,7 +483,7 @@ function App() {
                 currentValue={getPositionValue('push')}
                 pnl={getUnrealizedPnL('push')}
                 onPlaceBet={() => placeBet('push')}
-                onSellPosition={() => sellPosition('push')}
+                onSellPosition={(percentage) => sellPosition('push', percentage)}
               />
             </div>
           )}

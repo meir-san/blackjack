@@ -13,7 +13,7 @@ interface GameStore extends GameState {
   startNewRound: () => void;
   advancePhase: () => void;
   placeBet: (type: 'player' | 'dealer' | 'push') => void;
-  sellPosition: (type: 'player' | 'dealer' | 'push') => void;
+  sellPosition: (type: 'player' | 'dealer' | 'push', percentage?: number) => void;
   setSelectedBetAmount: (amount: number) => void;
   setTimer: (time: number) => void;
   decrementTimer: () => void;
@@ -330,29 +330,61 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  sellPosition: (type) => {
+  sellPosition: (type, percentage = 100) => {
     const state = get();
     if (state.phase === PHASES.RESOLUTION || state.myPositions[type].length === 0) {
       return;
     }
     
-    // Calculate current value: shares × current price (EXACTLY like original)
+    // Clamp percentage between 0 and 100
+    const sellPercentage = Math.max(0, Math.min(100, percentage));
+    if (sellPercentage === 0) return;
+    
+    // Calculate current value: shares × current price
     const currentOdds = state.getImpliedOdds(type) / 100;
     const totalShares = state.myPositions[type].reduce((sum, pos) => sum + pos.shares, 0);
-    const cashOut = totalShares * currentOdds;
+    const sharesToSell = totalShares * (sellPercentage / 100);
+    const cashOut = sharesToSell * currentOdds;
     
-    // Remove value from pool and clear positions
-    set({
-      balance: state.balance + cashOut,
-      pool: {
-        ...state.pool,
-        [type]: Math.max(0, state.pool[type] - cashOut),
-      },
-      myPositions: {
-        ...state.myPositions,
-        [type]: [],
-      },
-    });
+    if (sellPercentage === 100) {
+      // Sell everything - clear positions
+      set({
+        balance: state.balance + cashOut,
+        pool: {
+          ...state.pool,
+          [type]: Math.max(0, state.pool[type] - cashOut),
+        },
+        myPositions: {
+          ...state.myPositions,
+          [type]: [],
+        },
+      });
+    } else {
+      // Partial sell - proportionally reduce shares from each position
+      const remainingPositions = state.myPositions[type].map(pos => {
+        const sharesFromThisPosition = pos.shares * (sellPercentage / 100);
+        const remainingShares = pos.shares - sharesFromThisPosition;
+        const remainingAmountPaid = pos.amountPaid * (remainingShares / pos.shares);
+        
+        return {
+          ...pos,
+          shares: remainingShares,
+          amountPaid: remainingAmountPaid,
+        };
+      }).filter(pos => pos.shares > 0.01); // Remove positions with negligible shares
+      
+      set({
+        balance: state.balance + cashOut,
+        pool: {
+          ...state.pool,
+          [type]: Math.max(0, state.pool[type] - cashOut),
+        },
+        myPositions: {
+          ...state.myPositions,
+          [type]: remainingPositions,
+        },
+      });
+    }
     
     state.addActivityFeedItem({
       username: 'YOU',

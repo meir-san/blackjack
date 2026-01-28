@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { Pool } from '../types';
 
 interface BettingRowProps {
@@ -15,7 +16,7 @@ interface BettingRowProps {
   currentValue: number;
   pnl: number;
   onPlaceBet: () => void;
-  onSellPosition: () => void;
+  onSellPosition: (percentage: number) => void;
 }
 
 export function BettingRow({
@@ -35,6 +36,15 @@ export function BettingRow({
   onPlaceBet,
   onSellPosition,
 }: BettingRowProps) {
+  const [sellPercentage, setSellPercentage] = useState(100);
+
+  // Reset slider to 100% when position is sold
+  useEffect(() => {
+    if (!hasPosition) {
+      setSellPercentage(100);
+    }
+  }, [hasPosition]);
+
   const colors = {
     player: {
       dot: 'bg-emerald-500',
@@ -112,7 +122,7 @@ export function BettingRow({
 
       {/* Row 2: Position Details (only if has position) */}
       {hasPosition && (
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-600/50">
+        <div className="mt-3 pt-3 border-t border-slate-600/50 space-y-3">
           {/* Position Pills */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="px-2.5 py-1 rounded-md bg-slate-600/60 text-xs">
@@ -129,21 +139,52 @@ export function BettingRow({
             </div>
           </div>
 
+          {/* Sell Slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-slate-300 font-medium">Sell Percentage</label>
+              <span className="text-sm font-semibold text-white">{sellPercentage}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={sellPercentage}
+              onChange={(e) => setSellPercentage(Number(e.target.value))}
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              style={{
+                background: `linear-gradient(to right, ${pnl >= 0 ? '#10b981' : '#ef4444'} 0%, ${pnl >= 0 ? '#10b981' : '#ef4444'} ${sellPercentage}%, #475569 ${sellPercentage}%, #475569 100%)`
+              }}
+            />
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>0%</span>
+              <span className="text-slate-500">Sell Amount: ${(currentValue * sellPercentage / 100).toFixed(2)}</span>
+              <span>100%</span>
+            </div>
+          </div>
+
           {/* Sell Button with P&L */}
           <button
-            onClick={onSellPosition}
-            aria-label={`Sell ${label} position for $${currentValue.toFixed(0)}, ${pnl >= 0 ? 'profit' : 'loss'} of $${Math.abs(pnl).toFixed(0)}`}
+            onClick={() => onSellPosition(sellPercentage)}
+            disabled={sellPercentage === 0}
+            aria-label={`Sell ${sellPercentage}% of ${label} position`}
             className={`
-              px-4 py-2 rounded-lg text-sm font-medium transition-all
+              w-full px-4 py-2 rounded-lg text-sm font-medium transition-all
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900
               ${
-                pnl >= 0
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white focus:ring-emerald-400'
-                  : 'bg-red-600 hover:bg-red-500 text-white focus:ring-red-400'
+                sellPercentage === 0
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : pnl >= 0
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white focus:ring-emerald-400'
+                    : 'bg-red-600 hover:bg-red-500 text-white focus:ring-red-400'
               }
             `}
           >
-            Sell ${currentValue.toFixed(0)} <span className="opacity-80">({pnl >= 0 ? '+$' : '-$'}{Math.abs(pnl).toFixed(0)})</span>
+            Sell {sellPercentage}% ({sellPercentage === 100 ? 'All' : `$${(currentValue * sellPercentage / 100).toFixed(0)}`}) 
+            <span className="opacity-80 ml-1">
+              ({pnl >= 0 ? '+' : ''}${((pnl * sellPercentage) / 100).toFixed(0)})
+            </span>
           </button>
         </div>
       )}
