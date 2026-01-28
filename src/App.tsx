@@ -63,10 +63,12 @@ function App() {
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preDealAutoStartRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoPlayModeRef = useRef(false);
 
   // Initialize game
   useEffect(() => {
     startNewRound();
+    autoPlayModeRef.current = false; // Reset auto-play mode on new round
   }, [startNewRound]);
 
   // Auto-start game after 60 seconds if no bets placed in PRE_DEAL phase
@@ -87,6 +89,9 @@ function App() {
         
         // Only auto-start if no bets have been placed
         if (!hasUserBets && state.phase === PHASES.PRE_DEAL) {
+          // Enable auto-play mode so the game continues through all phases
+          autoPlayModeRef.current = true;
+          
           // Simulate crowd bets to make it look like players entered the game
           // Add 3-5 crowd bets to simulate activity
           const numBets = 3 + Math.floor(Math.random() * 3); // 3-5 bets
@@ -118,9 +123,13 @@ function App() {
     }
   }, [phase, advancePhase, simulateCrowdBet, decrementTimer]);
 
-  // Auto-countdown timer (only starts after first bet is placed)
+  // Auto-countdown timer (only starts after first bet is placed OR in auto-play mode)
   useEffect(() => {
-    if (phase === PHASES.RESOLUTION) return;
+    if (phase === PHASES.RESOLUTION) {
+      // Reset auto-play mode when round resolves
+      autoPlayModeRef.current = false;
+      return;
+    }
 
     const interval = setInterval(() => {
       const state = useGameStore.getState();
@@ -131,8 +140,8 @@ function App() {
       // Check if countdown has already started (timer has been decremented)
       const countdownStarted = state.timer < PREDICTION_WINDOW;
       
-      // Only decrement timer if user has bets OR countdown has already started
-      if (hasUserBets || countdownStarted) {
+      // Decrement timer if user has bets OR countdown has already started OR in auto-play mode
+      if (hasUserBets || countdownStarted || autoPlayModeRef.current) {
         decrementTimer();
         const currentTimer = useGameStore.getState().timer;
         if (currentTimer <= 0) {
