@@ -62,11 +62,48 @@ function App() {
 
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preDealAutoStartRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize game
   useEffect(() => {
     startNewRound();
   }, [startNewRound]);
+
+  // Auto-start game after 60 seconds if no bets placed in PRE_DEAL phase
+  useEffect(() => {
+    if (phase === PHASES.PRE_DEAL) {
+      // Clear any existing timer
+      if (preDealAutoStartRef.current) {
+        clearTimeout(preDealAutoStartRef.current);
+      }
+
+      // Start 60-second countdown
+      preDealAutoStartRef.current = setTimeout(() => {
+        const state = useGameStore.getState();
+        // Check if user has placed any bets
+        const hasUserBets = state.myPositions.player.length > 0 || 
+                            state.myPositions.dealer.length > 0 || 
+                            state.myPositions.push.length > 0;
+        
+        // Only auto-start if no bets have been placed
+        if (!hasUserBets && state.phase === PHASES.PRE_DEAL) {
+          advancePhase();
+        }
+      }, 60000); // 60 seconds
+
+      return () => {
+        if (preDealAutoStartRef.current) {
+          clearTimeout(preDealAutoStartRef.current);
+        }
+      };
+    } else {
+      // Clear timer if phase changes away from PRE_DEAL
+      if (preDealAutoStartRef.current) {
+        clearTimeout(preDealAutoStartRef.current);
+        preDealAutoStartRef.current = null;
+      }
+    }
+  }, [phase, advancePhase]);
 
   // Auto-countdown timer (only starts after first bet is placed)
   useEffect(() => {
