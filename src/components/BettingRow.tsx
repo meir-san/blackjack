@@ -36,14 +36,17 @@ export function BettingRow({
   onPlaceBet,
   onSellPosition,
 }: BettingRowProps) {
-  const [sellPercentage, setSellPercentage] = useState(100);
+  const [sharesToSell, setSharesToSell] = useState(0);
 
-  // Reset slider to 100% when position is sold
+  // Reset slider to 0 when position is sold or shares change
   useEffect(() => {
     if (!hasPosition) {
-      setSellPercentage(100);
+      setSharesToSell(0);
+    } else {
+      // Clamp sharesToSell to current shares if shares decreased
+      setSharesToSell(prev => Math.min(prev, Math.floor(shares)));
     }
-  }, [hasPosition]);
+  }, [hasPosition, shares]);
 
   const colors = {
     player: {
@@ -142,38 +145,47 @@ export function BettingRow({
           {/* Sell Slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs text-slate-300 font-medium">Sell Percentage</label>
-              <span className="text-sm font-semibold text-white">{sellPercentage}%</span>
+              <label className="text-xs text-slate-300 font-medium">Shares to Sell</label>
+              <span className="text-sm font-semibold text-white">{sharesToSell} / {Math.floor(shares)}</span>
             </div>
             <input
               type="range"
               min="0"
-              max="100"
+              max={Math.floor(shares)}
               step="1"
-              value={sellPercentage}
-              onChange={(e) => setSellPercentage(Number(e.target.value))}
+              value={sharesToSell}
+              onChange={(e) => setSharesToSell(Number(e.target.value))}
               className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
               style={{
-                background: `linear-gradient(to right, ${pnl >= 0 ? '#10b981' : '#ef4444'} 0%, ${pnl >= 0 ? '#10b981' : '#ef4444'} ${sellPercentage}%, #475569 ${sellPercentage}%, #475569 100%)`
+                background: `linear-gradient(to right, ${pnl >= 0 ? '#10b981' : '#ef4444'} 0%, ${pnl >= 0 ? '#10b981' : '#ef4444'} ${shares > 0 ? (sharesToSell / Math.floor(shares)) * 100 : 0}%, #475569 ${shares > 0 ? (sharesToSell / Math.floor(shares)) * 100 : 0}%, #475569 100%)`
               }}
             />
             <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>0%</span>
-              <span className="text-slate-500">Sell Amount: ${(currentValue * sellPercentage / 100).toFixed(2)}</span>
-              <span>100%</span>
+              <span>0</span>
+              <span className="text-slate-500">
+                Sell Value: ${shares > 0 ? ((currentValue / shares) * sharesToSell).toFixed(2) : '0.00'}
+              </span>
+              <span>{Math.floor(shares)}</span>
             </div>
           </div>
 
           {/* Sell Button with P&L */}
           <button
-            onClick={() => onSellPosition(sellPercentage)}
-            disabled={sellPercentage === 0}
-            aria-label={`Sell ${sellPercentage}% of ${label} position`}
+            onClick={() => {
+              if (shares > 0 && sharesToSell > 0) {
+                const totalWholeShares = Math.floor(shares);
+                const percentage = totalWholeShares > 0 ? (sharesToSell / totalWholeShares) * 100 : 0;
+                onSellPosition(percentage);
+                setSharesToSell(0); // Reset slider after selling
+              }
+            }}
+            disabled={sharesToSell === 0 || shares === 0}
+            aria-label={`Sell ${sharesToSell} shares of ${label} position`}
             className={`
               w-full px-4 py-2 rounded-lg text-sm font-medium transition-all
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900
               ${
-                sellPercentage === 0
+                sharesToSell === 0 || shares === 0
                   ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                   : pnl >= 0
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white focus:ring-emerald-400'
@@ -181,10 +193,12 @@ export function BettingRow({
               }
             `}
           >
-            Sell {sellPercentage}% ({sellPercentage === 100 ? 'All' : `$${(currentValue * sellPercentage / 100).toFixed(0)}`}) 
-            <span className="opacity-80 ml-1">
-              ({pnl >= 0 ? '+' : ''}${((pnl * sellPercentage) / 100).toFixed(0)})
-            </span>
+            Sell {sharesToSell} {sharesToSell === 1 ? 'Share' : 'Shares'} 
+            {shares > 0 && (
+              <span className="opacity-80 ml-1">
+                (${((currentValue / shares) * sharesToSell).toFixed(0)})
+              </span>
+            )}
           </button>
         </div>
       )}

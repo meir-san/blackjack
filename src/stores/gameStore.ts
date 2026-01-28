@@ -343,10 +343,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Calculate current value: shares × current price
     const currentOdds = state.getImpliedOdds(type) / 100;
     const totalShares = state.myPositions[type].reduce((sum, pos) => sum + pos.shares, 0);
-    const sharesToSell = totalShares * (sellPercentage / 100);
+    const sharesToSellFloat = totalShares * (sellPercentage / 100);
+    const sharesToSell = Math.floor(sharesToSellFloat); // Round down to whole shares
     const cashOut = sharesToSell * currentOdds;
     
-    if (sellPercentage === 100) {
+    if (sharesToSell === 0) return; // Can't sell less than 1 share
+    
+    if (sellPercentage >= 99.99 || sharesToSell >= Math.floor(totalShares)) {
       // Sell everything - clear positions
       set({
         balance: state.balance + cashOut,
@@ -360,18 +363,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
         },
       });
     } else {
-      // Partial sell - proportionally reduce shares from each position
-      const remainingPositions = state.myPositions[type].map(pos => {
-        const sharesFromThisPosition = pos.shares * (sellPercentage / 100);
-        const remainingShares = pos.shares - sharesFromThisPosition;
-        const remainingAmountPaid = pos.amountPaid * (remainingShares / pos.shares);
+      // Partial sell - sell whole shares from positions (FIFO - first in, first out)
+      let remainingSharesToSell = sharesToSell;
+      const remainingPositions: Position[] = [];
+      
+      for (const pos of state.myPositions[type]) {
+        if (remainingSharesToSell <= 0) {
+          // No more shares to sell, keep the rest
+          remainingPositions.push(pos);
+          continue;
+        }
         
-        return {
-          ...pos,
-          shares: remainingShares,
-          amountPaid: remainingAmountPaid,
-        };
-      }).filter(pos => pos.shares > 0.01); // Remove positions with negligible shares
+        const sharesFromThisPosition = Math.min(remainingSharesToSell, Math.floor(pos.shares));
+        const remainingShares = pos.shares - sharesFromThisPosition;
+        
+        if (remainingShares > 0.01) {
+          // Calculate remaining amountPaid proportionally
+          const remainingAmountPaid = pos.amountPaid * (remainingShares / pos.shares);
+          remainingPositions.push({
+            ...pos,
+            shares: remainingShares,
+            amountPaid: remainingAmountPaid,
+          });
+        }
+        
+        remainingSharesToSell -= sharesFromThisPosition;
+      }
       
       set({
         balance: state.balance + cashOut,
