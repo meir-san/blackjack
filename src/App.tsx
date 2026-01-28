@@ -87,7 +87,20 @@ function App() {
         
         // Only auto-start if no bets have been placed
         if (!hasUserBets && state.phase === PHASES.PRE_DEAL) {
-          advancePhase();
+          // Simulate crowd bets to make it look like players entered the game
+          // Add 3-5 crowd bets to simulate activity
+          const numBets = 3 + Math.floor(Math.random() * 3); // 3-5 bets
+          for (let i = 0; i < numBets; i++) {
+            setTimeout(() => {
+              simulateCrowdBet();
+            }, i * 200); // Stagger the bets slightly
+          }
+          
+          // After simulating bets, start the countdown timer
+          // This will make the game continue automatically through all phases
+          setTimeout(() => {
+            decrementTimer(); // Start the countdown, which will continue automatically
+          }, numBets * 200 + 100);
         }
       }, 60000); // 60 seconds
 
@@ -103,7 +116,7 @@ function App() {
         preDealAutoStartRef.current = null;
       }
     }
-  }, [phase, advancePhase]);
+  }, [phase, advancePhase, simulateCrowdBet, decrementTimer]);
 
   // Auto-countdown timer (only starts after first bet is placed)
   useEffect(() => {
